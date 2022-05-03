@@ -11,62 +11,81 @@ pub enum Json {
     Null,
 }
 
+fn destructure (json: Json) -> String {
+    match json {
+        Json::String(s) => s,
+        _ => panic!("can only destructure Json::String"),
+    }
+ }
+
+fn parse_whitespace(chars: &mut Peekable<Chars>) {
+    while chars.peek().unwrap() == &' ' {
+        chars.next().unwrap();
+    }
+}
+
 pub fn parse_json(chars: &mut Peekable<Chars>) -> Json {
+    parse_whitespace(chars);
     let mut tk = chars.next().unwrap();
-    if tk == '{' {
-        let mut arg = HashMap::new();
-        while tk != '}' {
-            let mut key = String::new();
-            chars.next();
-            tk = chars.next().unwrap();
-            while tk != '"' {
-                key.push_str(&tk.to_string());
+    match tk {
+        '{' => {
+            let mut arg = HashMap::new();
+            while tk != '}' {
+                let key = destructure(parse_json(chars));
+                parse_whitespace(chars);
+                chars.next();
+                let value = parse_json(chars);
+                arg.insert(key, value);
+                parse_whitespace(chars);
                 tk = chars.next().unwrap();
             }
+            return Json::Object(arg);
+        }
+        '[' => {
+            let mut arg = Vec::new();
+            while tk != ']' {
+                arg.push(parse_json(chars));
+                parse_whitespace(chars);
+                tk = chars.next().unwrap();
+            }
+            return Json::Array(arg);
+        }
+        '"' => {
+            let mut arg = String::new();
+            tk = chars.next().unwrap();
+            while tk != '"' {
+                arg.push_str(&tk.to_string());
+                tk = chars.next().unwrap();
+            }
+            return Json::String(arg);
+        }
+        'n' => {
             chars.next();
-            let value = parse_json(chars);
-            arg.insert(key, value);
-            tk = chars.next().unwrap();
+            chars.next();
+            chars.next();
+            return Json::Null;
         }
-        return Json::Object(arg);
-    } else if tk == '[' {
-        let mut arg = Vec::new();
-        while tk != ']' {
-            arg.push(parse_json(chars));
-            tk = chars.next().unwrap();
+        't' => {
+            chars.next();
+            chars.next();
+            chars.next();
+            return Json::Bool(true);
         }
-        return Json::Array(arg);
-    } else if tk == '"' {
-        let mut arg = String::new();
-        tk = chars.next().unwrap();
-        while tk != '"' {
-            arg.push_str(&tk.to_string());
-            tk = chars.next().unwrap();
+        'f' => {
+            chars.next();
+            chars.next();
+            chars.next();
+            chars.next();
+            return Json::Bool(false);
         }
-        return Json::String(arg);
-    } else if tk == 'n' {
-        chars.next();
-        chars.next();
-        chars.next();
-        return Json::Null;
-    } else if tk == 't' {
-        chars.next();
-        chars.next();
-        chars.next();
-        return Json::Bool(true);
-    } else if tk == 'f' {
-        chars.next();
-        chars.next();
-        chars.next();
-        chars.next();
-        return Json::Bool(false);
-    } else {
-        let mut arg = String::new();
-        while chars.peek().unwrap().is_numeric() || chars.peek().unwrap() == &'.' {
-            arg.push_str(&tk.to_string());
-            tk = chars.next().unwrap();
+        _ => {
+            let mut arg = String::new();
+            while chars.peek().unwrap().is_numeric() || chars.peek().unwrap() == &'.' {
+                arg.push_str(&tk.to_string());
+                tk = chars.next().unwrap();
+            }
+            let arg = arg.parse().unwrap();
+            return Json::Number(arg);
         }
-        let arg = arg.parse().unwrap();
-        return Json::Number(arg);
     }
 }
