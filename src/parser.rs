@@ -49,7 +49,7 @@ pub fn parse_json(chars: &mut Peekable<Chars>) -> Result<Json, String> {
                 arg.insert(key, value);
                 parse_whitespace(chars);
                 tk = chars.next();
-                if tk != Some(',') && tk != Some('}') {
+                if !matches!(tk, Some(',') | Some('}')) {
                     return Err(String::from("expected valid token"));
                 }
             }
@@ -61,7 +61,7 @@ pub fn parse_json(chars: &mut Peekable<Chars>) -> Result<Json, String> {
                 arg.push(parse_json(chars)?);
                 parse_whitespace(chars);
                 tk = chars.next();
-                if tk != Some(',') && tk != Some(']') {
+                if !matches!(tk, Some(',') | Some(']')) {
                     return Err(String::from("expected valid token"));
                 }
             }
@@ -90,20 +90,17 @@ pub fn parse_json(chars: &mut Peekable<Chars>) -> Result<Json, String> {
             parse_expected(chars, vec!['a', 'l', 's', 'e'])?;
             return Ok(Json::Bool(false));
         }
-        Some(x) if x.is_digit(10) || x == '-' => {
+        Some(x) if matches!(x, '0'..='9' | '-') => {
             let mut arg = x.to_string();
             while let Some(c) = chars.peek() {
-                if c.is_digit(10) || c == &'.' {
+                if matches!(c, '0'..='9' | '.' | 'E' | 'e' | '+' | '-') {
                     arg.push_str(&c.to_string());
                     chars.next();
                 } else {
                     break;
                 }
             }
-            let arg = match arg.parse::<f64>() {
-                Ok(x) => x,
-                Err(_) => panic!("invalid number"),
-            };
+            let arg = arg.parse().expect("invalid number");
             return Ok(Json::Number(arg));
         }
         _ => return Err(String::from("expected valid token")),
