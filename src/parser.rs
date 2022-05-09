@@ -75,6 +75,10 @@ pub fn parse_json(chars: &mut Peekable<Chars>) -> Result<Json, String> {
                 } else {
                     arg.push_str(&c.to_string());
                 }
+                if c == '\\' && chars.peek() == Some(&'"') {
+                    arg.push_str("\"");
+                    chars.next();
+                }
             }
             return Ok(Json::String(arg));
         }
