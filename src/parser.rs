@@ -70,14 +70,23 @@ pub fn parse_json(chars: &mut Peekable<Chars>) -> Result<Json, String> {
         Some('"') => {
             let mut arg = String::new();
             while let Some(c) = chars.next() {
-                if c == '"' {
+                if c == '\\' {
+                    match chars.peek() {
+                        Some('"') => arg.push_str("\""),
+                        Some('\\') => arg.push_str("\\"),
+                        Some('/') => arg.push_str("/"),
+                        Some('b') => arg.push_str("\x08"),
+                        Some('f') => arg.push_str("\x0C"),
+                        Some('n') => arg.push_str("\n"),
+                        Some('r') => arg.push_str("\r"),
+                        Some('t') => arg.push_str("\t"),
+                        _ => return Err(String::from("expected valid token")),
+                    }
+                    chars.next();
+                } else if c == '"' {
                     break;
                 } else {
                     arg.push_str(&c.to_string());
-                }
-                if c == '\\' && chars.peek() == Some(&'"') {
-                    arg.push_str("\"");
-                    chars.next();
                 }
             }
             return Ok(Json::String(arg));
