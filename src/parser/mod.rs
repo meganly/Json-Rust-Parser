@@ -1,7 +1,11 @@
+#[cfg(test)]
+mod test;
+
 use std::collections::HashMap;
 use std::str::Chars;
 use std::iter::Peekable;
 
+#[derive(PartialEq, Debug)]
 pub enum Json {
     Object(HashMap<String, Json>),
     Array(Vec<Json>),
