@@ -49,6 +49,22 @@ fn test_escaped_string() {
 }
 
 #[test]
+fn test_utf8() {
+    let json = r#""ラメン""#;
+    let parsed = super::parse_json(&mut json.chars().peekable()).unwrap();
+    let expected = "ラメン";
+    assert_eq!(parsed, super::Json::String(String::from(expected)));
+}
+
+#[test]
+fn test_unicode() {
+    let json = r#""\u0064\u0065\u0063o\u0064\u0065 m\u0065: \ud83d\udca9""#;
+    let parsed = super::parse_json(&mut json.chars().peekable()).unwrap();
+    let expected = "\u{0064}\u{0065}\u{0063}o\u{0064}\u{0065} m\u{0065}: \u{fffd}\u{fffd}";
+    assert_eq!(parsed, super::Json::String(String::from(expected)));
+}
+
+#[test]
 fn test_object() {
     let json = r#"{"key1": false, "key2": 13}"#;
     let parsed = super::parse_json(&mut json.chars().peekable()).unwrap();

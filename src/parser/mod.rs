@@ -39,6 +39,15 @@ fn parse_expected(chars: &mut Peekable<Chars>, expected: Vec<char>) -> Result<()
     Ok(())
 }
 
+fn parse_unicode(chars: &mut Peekable<Chars>) -> char {
+    let unicode: String = chars.take(4).collect();
+
+    u32::from_str_radix(&unicode, 16)
+        .ok()
+        .and_then(std::char::from_u32)
+        .unwrap_or('\u{fffd}')
+}
+
 pub fn parse_json(chars: &mut Peekable<Chars>) -> Result<Json, String> {
     parse_whitespace(chars);
     let mut tk = chars.next();
@@ -75,22 +84,22 @@ pub fn parse_json(chars: &mut Peekable<Chars>) -> Result<Json, String> {
             let mut arg = String::new();
             while let Some(c) = chars.next() {
                 if c == '\\' {
-                    match chars.peek() {
-                        Some('"') => arg.push_str("\""),
-                        Some('\\') => arg.push_str("\\"),
-                        Some('/') => arg.push_str("/"),
-                        Some('b') => arg.push_str("\x08"),
-                        Some('f') => arg.push_str("\x0C"),
-                        Some('n') => arg.push_str("\n"),
-                        Some('r') => arg.push_str("\r"),
-                        Some('t') => arg.push_str("\t"),
+                    match chars.next() {
+                        Some('"') => arg.push('\"'),
+                        Some('\\') => arg.push('\\'),
+                        Some('/') => arg.push('/'),
+                        Some('b') => arg.push('\x08'),
+                        Some('f') => arg.push('\x0C'),
+                        Some('n') => arg.push('\n'),
+                        Some('r') => arg.push('\r'),
+                        Some('t') => arg.push('\t'),
+                        Some('u') => arg.push(parse_unicode(chars)),
                         _ => return Err(String::from("expected valid token")),
                     }
-                    chars.next();
                 } else if c == '"' {
                     break;
                 } else {
-                    arg.push_str(&c.to_string());
+                    arg.push(c);
                 }
             }
             return Ok(Json::String(arg));
@@ -111,7 +120,7 @@ pub fn parse_json(chars: &mut Peekable<Chars>) -> Result<Json, String> {
             let mut arg = x.to_string();
             while let Some(c) = chars.peek() {
                 if matches!(c, '0'..='9' | '.' | 'E' | 'e' | '+' | '-') {
-                    arg.push_str(&c.to_string());
+                    arg.push(*c);
                     chars.next();
                 } else {
                     break;
