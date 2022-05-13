@@ -25,8 +25,12 @@ impl Json {
 }
 
 fn parse_whitespace(chars: &mut Peekable<Chars>) {
-    while chars.peek() == Some(&' ') {
-        chars.next();
+    while let Some(c) = chars.peek() {
+        if c.is_ascii_whitespace() {
+            chars.next();
+        } else {
+            break;
+        }
     }
 }
 
