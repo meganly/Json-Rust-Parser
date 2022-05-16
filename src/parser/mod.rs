@@ -1,3 +1,5 @@
+//! Parse JSON data into a Rust data structure
+
 #[cfg(test)]
 mod test;
 
@@ -5,6 +7,8 @@ use std::collections::HashMap;
 use std::str::Chars;
 use std::iter::Peekable;
 
+
+/// Represents the different data types available in JSON
 #[derive(PartialEq, Debug)]
 pub enum Json {
     Object(HashMap<String, Json>),
@@ -16,6 +20,7 @@ pub enum Json {
 }
 
 impl Json {
+    /// Destructure a `Json::String` into a Rust `String`
     fn destructure (self) -> Result<String, String> {
         match self {
             Json::String(s) => Ok(s),
@@ -24,6 +29,7 @@ impl Json {
     }
 }
 
+/// Consume the whitespace chars in a peekable iterator
 fn parse_whitespace(chars: &mut Peekable<Chars>) {
     while let Some(c) = chars.peek() {
         if c.is_ascii_whitespace() {
@@ -34,6 +40,7 @@ fn parse_whitespace(chars: &mut Peekable<Chars>) {
     }
 }
 
+/// Determine if the chars in a peekable iterator match the chars in a vector
 fn parse_expected(chars: &mut Peekable<Chars>, expected: Vec<char>) -> Result<(), String> {
     for expect in expected {
         if chars.next() != Some(expect) {
@@ -43,6 +50,7 @@ fn parse_expected(chars: &mut Peekable<Chars>, expected: Vec<char>) -> Result<()
     Ok(())
 }
 
+/// Parse a peekable iterator of 4 hex digits into a unicode char
 fn parse_unicode(chars: &mut Peekable<Chars>) -> char {
     let unicode: String = chars.take(4).collect();
 
@@ -52,6 +60,8 @@ fn parse_unicode(chars: &mut Peekable<Chars>) -> char {
         .unwrap_or('\u{fffd}')
 }
 
+
+/// Parse a peekable iterator over the chars of a string slice into a Json enum
 pub fn parse_json(chars: &mut Peekable<Chars>) -> Result<Json, String> {
     parse_whitespace(chars);
     let mut tk = chars.next();
